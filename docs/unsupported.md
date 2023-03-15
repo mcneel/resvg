@@ -1,3 +1,7 @@
+## A list of unsupported SVG 1.1 features
+
+For the list of unsupported SVG 2 features see: [svg2-changelog.md](./svg2-changelog.md)
+
 ### Elements
 
 - Font based
@@ -20,22 +24,17 @@
 
 ### Attributes
 
-- `alignment-baseline`
 - `clip` (deprecated in the SVG 2)
 - `color-interpolation`
 - `color-profile`
 - `color-rendering`
 - `direction`
-- `dominant-baseline`
-- `font`
+- `font` (do not confuse with `font-family`)
 - `font-size-adjust`
 - `font-stretch`
-- `font-variant`
 - `glyph-orientation-horizontal` (removed in the SVG 2)
 - `glyph-orientation-vertical` (deprecated in the SVG 2)
 - `kerning` (removed in the SVG 2)
-- `lengthAdjust`
-- `textLength`
 - `unicode-bidi`
 
 **Note:** this list does not include elements and attributes outside the

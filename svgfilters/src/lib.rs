@@ -46,12 +46,12 @@ Some methods will allocate necessary, temporary buffers which will be reflected 
 But majority of methods will work on provided buffers.
 */
 
-#![doc(html_root_url = "https://docs.rs/svgfilters/0.2.0")]
-
 #![no_std]
-
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::too_many_arguments)]
 
 extern crate alloc;
 
@@ -70,45 +70,15 @@ mod morphology;
 mod turbulence;
 
 pub use box_blur::box_blur;
-pub use color_matrix::{ColorMatrix, color_matrix};
-pub use component_transfer::{TransferFunction, component_transfer};
+pub use color_matrix::{color_matrix, ColorMatrix};
+pub use component_transfer::{component_transfer, TransferFunction};
 pub use composite::arithmetic_composite;
-pub use convolve_matrix::{ConvolveMatrix, EdgeMode, convolve_matrix};
-pub use displacement_map::{ColorChannel, displacement_map};
+pub use convolve_matrix::{convolve_matrix, ConvolveMatrix, EdgeMode};
+pub use displacement_map::{displacement_map, ColorChannel};
 pub use iir_blur::iir_blur;
-pub use lighting::{LightSource, diffuse_lighting, specular_lighting};
-pub use morphology::{MorphologyOperator, morphology};
+pub use lighting::{diffuse_lighting, specular_lighting, LightSource};
+pub use morphology::{morphology, MorphologyOperator};
 pub use turbulence::turbulence;
-
-
-/// A normalized value.
-///
-/// Just like `f64` but immutable and guarantee to be in a 0..1 range.
-#[derive(Clone, Copy, Debug)]
-pub struct NormalizedValue(f64);
-
-impl NormalizedValue {
-    /// Creates a new `NormalizedValue` value.
-    #[inline]
-    pub fn new(n: f64) -> Self {
-        debug_assert!(n.is_finite());
-        debug_assert!(n >= 0.0 && n <= 1.0);
-        NormalizedValue(f64_bound(0.0, n, 1.0))
-    }
-
-    /// Returns an underlying value.
-    #[inline]
-    fn value(&self) -> f64 {
-        self.0
-    }
-}
-
-impl From<f64> for NormalizedValue {
-    fn from(v: f64) -> Self {
-        NormalizedValue::new(v)
-    }
-}
-
 
 /// An image reference.
 ///
@@ -129,7 +99,11 @@ impl<'a> ImageRef<'a> {
     /// Doesn't clone the provided data.
     #[inline]
     pub fn new(data: &'a [RGBA8], width: u32, height: u32) -> Self {
-        ImageRef { data, width, height }
+        ImageRef {
+            data,
+            width,
+            height,
+        }
     }
 
     #[inline]
@@ -137,7 +111,6 @@ impl<'a> ImageRef<'a> {
         self.data[(self.width * y + x) as usize].a as i16
     }
 }
-
 
 /// A mutable `ImageRef` variant.
 pub struct ImageRefMut<'a> {
@@ -152,7 +125,11 @@ impl<'a> ImageRefMut<'a> {
     /// Doesn't clone the provided data.
     #[inline]
     pub fn new(data: &'a mut [RGBA8], width: u32, height: u32) -> Self {
-        ImageRefMut { data, width, height }
+        ImageRefMut {
+            data,
+            width,
+            height,
+        }
     }
 
     #[inline]
@@ -165,7 +142,6 @@ impl<'a> ImageRefMut<'a> {
         &mut self.data[(self.width * y + x) as usize]
     }
 }
-
 
 /// Multiplies provided pixels alpha.
 pub fn multiply_alpha(data: &mut [RGBA8]) {
@@ -187,7 +163,6 @@ pub fn demultiply_alpha(data: &mut [RGBA8]) {
     }
 }
 
-
 /// Precomputed sRGB to LinearRGB table.
 ///
 /// Since we are storing the result in `u8`, there is no need to compute those
@@ -201,6 +176,7 @@ pub fn demultiply_alpha(data: &mut [RGBA8]) {
 /// ```
 ///
 /// Thanks to librsvg for the idea.
+#[rustfmt::skip]
 const SRGB_TO_LINEAR_RGB_TABLE: &[u8; 256] = &[
     0,   0,   0,   0,   0,   0,  0,    1,   1,   1,   1,   1,   1,   1,   1,   1,
     1,   1,   2,   2,   2,   2,  2,    2,   2,   2,   3,   3,   3,   3,   3,   3,
@@ -233,6 +209,7 @@ const SRGB_TO_LINEAR_RGB_TABLE: &[u8; 256] = &[
 /// ```
 ///
 /// Thanks to librsvg for the idea.
+#[rustfmt::skip]
 const LINEAR_RGB_TO_SRGB_TABLE: &[u8; 256] = &[
     0,  13,  22,  28,  34,  38,  42,  46,  50,  53,  56,  59,  61,  64,  66,  69,
     71,  73,  75,  77,  79,  81,  83,  85,  86,  88,  90,  92,  93,  95,  96,  98,
@@ -278,7 +255,6 @@ pub fn from_linear_rgb(data: &mut [RGBA8]) {
     }
 }
 
-
 // TODO: https://github.com/rust-lang/rust/issues/44095
 #[inline]
 fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
@@ -294,7 +270,6 @@ fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
         val
     }
 }
-
 
 trait FuzzyEq<Rhs: ?Sized = Self> {
     fn fuzzy_eq(&self, other: &Rhs) -> bool;

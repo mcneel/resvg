@@ -7,6 +7,323 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- Skip malformed `transform` attributes without skipping the whole element.
+
+## [0.29.0] - 2022-02-04
+### Added
+- `resvg` CLI loads system fonts only when an input SVG has text nodes now.
+  Fonts loading is an IO-heavy operation and by avoiding it we can speed up `resvg` execution.
+- `usvg::Group::should_isolate`
+- `usvg::Tree::has_text_nodes`
+
+### Changed
+- Some `usvg` internals were moved into the new `rosvgtree` crate.
+- Dummy groups are no longer removed. Use `usvg::Group::should_isolate` to check
+  if a group affects rendering.
+- `usvg-text-layout::TreeTextToPath::convert_text` no longer has the `keep_named_groups` argument.
+- MSRV bumped to 1.65
+- Update dependencies.
+
+### Removed
+- `usvg::Options::keep_named_groups`. Dummy groups are no longer removed.
+- (c-api) `resvg_options_set_keep_named_groups`
+- (Qt API) `ResvgOptions::setKeepNamedGroups`
+
+### Fixed
+- Missing `font-family` handling.
+- `font-weight` resolving.
+
+## [0.28.0] - 2022-12-03
+### Added
+- `usvg::Text` and `usvg::NodeKind::Text`.
+
+### Changed
+- `usvg` isn't converting text to paths by default now. A caller must call
+  `usvg::Tree::convert_text` or `usvg::Text::convert` from `usvg-text-layout` crate on demand.
+- `usvg` text layout implementation moved into `usvg-text-layout` crate.
+- During SVG size recovery, when no `width`, `height` and `viewBox` attributes have been set,
+  text nodes are no longer taken into an account. This is because a text node has no bbox
+  before conversion into path(s), which we no longer doing during parsing.
+- `usvg` is purely an SVG parser now. It doesn't convert text to paths
+  and doesn't write SVG anymore.
+- `usvg::filter::ConvolveMatrixData` methods are fields now.
+
+### Removed
+- `usvg` CLI binary. No alternatives for now.
+- All `usvg` build features.
+  - `filter`. Filter elements are always parsed by `usvg` now.
+  - `text`. Text elements are always parsed by `usvg` now.
+  - `export`. `usvg` cannot write an SVG anymore.
+- `usvg::Tree::to_string`. `usvg` cannot write an SVG anymore.
+- `usvg::TransformFromBBox` trait. This is just a regular `usvg::Transform` method now.
+- `usvg::OptionsRef`. `usvg::Options` is enough from now.
+- `usvg::Options::fontdb`. Used only by `usvg-text-layout` now.
+- `--dump-svg` from `resvg`.
+
+## [0.27.0] - 2022-11-27
+### Added
+- `lengthAdjust` and `textLength` attributes support.
+- Support automatic `image` size detection.
+  `width` and `height` attributes can be omitted or set to `auto` on `image` now. SVG2
+
+### Fixed
+- `--query-all` flag in `resvg` CLI.
+- Percentage values resolving.
+
+## [0.26.1] - 2022-11-21
+### Fixed
+- Allow `dominant-baseline` and `alignment-baseline` to be set via CSS.
+
+## [0.26.0] - 2022-11-20
+### Added
+- Minimal `dominant-baseline` and `alignment-baseline` support.
+- `mix-blend-mode` and `isolation` support. SVG2
+- Allow writing resvg output to stdout.
+- Allow disabling text kerning using `kerning="0"` and `style="font-kerning:none"`. SVG2
+- Allow `<percentage>` values for `opacity`, `fill-opacity`, `stroke-opacity`,
+  `flood-opacity` and `stop-opacity` attributes.<br>
+  You can write `opacity="50%"` now. SVG2
+
+### Changed
+- Disable focal point correction on radial gradients to conform with SVG 2. SVG2
+- Update `feMorphology` radius value resolving.
+
+### Fixed
+- Do not clip nested `svg` when only the `viewBox` attribute is present.
+
+## [0.25.0] - 2022-10-30
+### Added
+- Partial `paint-order` attribute support.
+  Markers can only be under or above the shape.
+
+### Fixed
+- Compilation issues caused by `rustybuzz` update.
+
+## [0.24.0] - 2022-10-22
+### Added
+- CSS3 `writing-mode` variants `vertical-rl` and `vertical-lr`.
+  Thanks to [yisibl](https://github.com/yisibl).
+- (tiny-skia) AArch64 Neon SIMD support. Up to 3x faster on Apple M1.
+
+### Changed
+- `usvg::Tree` stores only `Group`, `Path` and `Image` nodes now.
+  Instead of emulating an SVG file structure, where gradients, patterns, filters, clips and masks
+  are part of the nodes tree (usually inside the `defs` element), we reference them using `Rc`
+  from now.
+  This change makes `usvg` a bit simpler. Makes `usvg` API way easier, since instead of
+  looking for a node via `usvg::Tree::defs_by_id` the caller can access the type directly via `Rc`.
+  And makes creation of custom `usvg::Tree`s way easier.
+- `clip_path`, `mask` and `filters` `usvg::Group` fields store `Rc` instead of `String` now.
+- `usvg::NodeExt::units` was moved to `usvg::Paint::units`.
+- `usvg::filter::ImageKind::Use` stores `usvg::Node` instead of `String`.
+- `usvg::PathData` stores commands and points separately now to reduce overall memory usage.
+- `usvg::PathData` segments should be accessed via `segments()` now.
+- Most numeric types have been moved to the `strict-num` crate.
+- Rename `NormalizedValue` into `NormalizedF64`.
+- Rename `PositiveNumber` into `PositiveF64`.
+- Raw number of numeric types should be accessed via `get()` method instead of `value()` now.
+- `usvg::TextSpan::font_size` is `NonZeroPositiveF64` instead of `f64` now.
+- Re-export `usvg` and `tiny-skia` dependencies in `resvg`.
+- Re-export `roxmltree` dependency in `usvg`.
+- (usvg) Output float precision is reduced from 11 to 8 digits.
+
+### Removed
+- `usvg::Tree::create`. `usvg::Tree` is an open struct now.
+- `usvg::Tree::root`. It's a public field now.
+- `usvg::Tree::svg_node`. Replaced with `usvg::Tree` public fields.
+- `defs`, `is_in_defs`, `append_to_defs` and `defs_by_id` from `usvg::Tree`.
+  We no longer emulate SVG structure. No alternative.
+- `usvg::Tree::is_in_defs`. There are no `defs` anymore.
+- `usvg::Paint::Link`. We store gradient and patterns directly in `usvg::Paint` now.
+- `usvg::Svg`. No longer needed. `size` and `view_box` are `usvg::Tree` fields now.
+- `usvg::SubPathIter` and `usvg::PathData::subpaths`. No longer used.
+
+### Fixed
+- Path bbox calculation scales stroke width too.
+  Thanks to [growler](https://github.com/growler).
+- (tiny-skia) Round caps roundness.
+- (xmlparser) Stack overflow on specific files.
+- (c-api) `resvg_is_image_empty` output was inverted.
+
+## [0.23.0] - 2022-06-11
+### Added
+- `#RRGGBBAA` and `#RGBA` color notation support.
+  Thanks to [demurgos](https://github.com/demurgos).
+
+### Fixed
+- Panic during recursive `pattern` resolving.
+  Thanks to [FylmTM](https://github.com/FylmTM).
+- Spurious warning when using `--export-id`.
+  Thanks to [benoit-pierre](https://github.com/benoit-pierre).
+
+## [0.22.0] - 2022-02-20
+### Added
+- Support `svg` referenced by `use`. External SVG files are still not supported.
+
+### Changed
+- `ttf-parser`, `fontdb` and `rustybuzz` have been updated.
+
+## [0.21.0] - 2022-02-13
+### Added
+- `usvg::ImageHrefResolver` that allows a custom `xlink:href` handling.
+  Thanks to [antmelnyk](https://github.com/antmelnyk).
+- `usvg::Options::image_href_resolver`
+- Support for GIF images inside the `<image>` element.
+- (fontdb) Support for loading user fonts on Windows.
+- (fontdb) Support for parsing fontconfig config files on Linux.
+  For now, only to retrieve a list of font dirs.
+
+### Changed
+- MSRV bumped to 1.51
+- `usvg::ImageKind` stores data as `Arc<Vec<u8>>` and not just `Vec<u8>` now.
+
+### Fixed
+- Every nested `svg` element defines a new viewBox now. Previously, we were always using the root one.
+- Correctly handle SVG size calculation when SVG doesn't have a size and any elements.
+- Improve groups ungrouping speed.
+
+## [0.20.0] - 2021-12-29
+### Changed
+- `resvg::render` and `resvg::render_node` accept a transform now.
+- (c-api) `resvg_render` and `resvg_render_node` accept a transform now.
+- `usvg::Color` is a custom type and not a `svgtypes::Color` reexport now.
+- `usvg::Color` doesn't contain alpha anymore, which have been added in v0.16
+  Alpha would be automatically flattened.
+  This makes [Micro SVG](https://github.com/RazrFalcon/resvg/blob/master/docs/usvg_spec.adoc)
+  compatible with SVG 1.1 again.
+- (c-api) Rename `RESVG_FIT_TO_*` into `RESVG_FIT_TO_TYPE_*`.
+
+### Fixed
+- The `--background` argument in `resvg` correctly handles alpha now.
+- Fix building usvg without filter feature but with export.
+
+## [0.19.0] - 2021-10-04
+### Added
+- Better text-on-path converter accuracy by accounting the current transform.
+
+### Changed
+- `usvg::NodeExt::abs_transform` includes current node transform now.
+- Improved turbulence filter performance. Thanks to [akindle](https://github.com/akindle).
+- Multiple dependencies updated.
+
+## [0.18.0] - 2021-09-12
+### Added
+- `filter` build feature. Enabled by default.
+- `usvg::PathBbox` and `resvg_path_bbox` (to C API).
+
+### Changed
+- (usvg) All filter related types are under the `filter` module now.
+- (usvg) Remove `Fe` prefix from all filter types.
+- (c-api) `resvg_get_node_bbox` returns `resvg_path_bbox` now.
+
+### Fixed
+- Horizontal and vertical lines processing.
+- C API building without the `text` feature.
+
+## [0.17.0] - 2021-09-04
+### Added
+- `tiny-skia` updated with support of images larger than 8000x8000 pixels.
+- `feDropShadow` support. SVG2
+- [`<filter-value-list>`](https://www.w3.org/TR/filter-effects-1/#typedef-filter-value-list) support.
+  Meaning that the `filter` attribute can have multiple values now.
+  Like `url(#filter1) blur(2)`. SVG2
+- All [filter functions](https://www.w3.org/TR/filter-effects-1/#filter-functions). SVG2
+- Support all [new](https://www.w3.org/TR/compositing-1/#ltblendmodegt) `feBlend` modes. SVG2
+- Automatic SVG size detection when `width`/`height`/`viewBox` is not set.
+  Thanks to [reknih](https://github.com/reknih).
+- `usvg::Options::default_size`
+- `--default-width` and `--default-height` to usvg.
+
+### Changed
+- `usvg::Group::filter` is a list of filter IDs now.
+- `usvg::FeColorMatrixKind::Saturate` accepts any positive `f64` value now.
+- `svgfilters::ColorMatrix::Saturate` accepts any positive `f64` value now.
+- Fonts memory mapping was split into a separate build feature: `memmap-fonts`.
+  Now you can build resvg/usvg with `system-fonts`, but without `memmap-fonts`.
+  Enabled by default.
+- The `--dump-svg` argument in resvg CLI tool should be enabled using `--features dump-svg` now.
+  No enabled by default.
+- `usvg::Tree::to_string` is behind the `export` build feature now.
+
+### Fixed
+- When writing SVG, `usvg` will use `rgba()` notations for colors instead of `#RRGGBB`.
+
+## [0.16.0] - 2021-08-22
+### Added
+- CSS3 colors support. Specifically `rgba`, `hsl`, `hsla` and `transparent`. SVG2
+- Allow missing `rx`/`ry` attributes on `ellipse`. SVG2
+- Allow markers on all shapes. SVG2
+- `textPath` can reference basic shapes now. SVG2
+- `usvg::OptionsRef`, which is a non-owned `usvg::Options` variant.
+- `simplecss` updated with CSS specificity support.
+- `turn` angle unit support. SVG2
+- Basic `font-variant=small-caps` support. No font fallback.
+- `--export-area-page` to resvg.
+- `--export-area-drawing` to resvg.
+
+### Changed
+- `resvg::render_node` requires `usvg::Tree` now.
+- `usvg::Color` gained an `alpha` field.
+
+### Removed
+- `usvg::Node::tree`. Cannot be implemented efficiently anymore.
+- `usvg::SystemFontDB`. No longer needed.
+
+### Fixed
+- `pattern` scaling.
+- Greatly improve `symbol` resolving speed in `usvg`.
+- Whitespaces trimming on nested `tspan`.
+
+## [0.15.0] - 2021-06-13
+### Added
+- Allow reading SVG from stdin in `resvg` binary.
+- `--id-prefix` to `usvg`.
+- `FitTo::Size`
+- `resvg` binary accepts `--width` and `--height` args together now.
+  Previously, only `--width` or `--height` were allowed.
+- `usvg::Path::text_bbox`
+- The maximum number of SVG elements is limited by 1_000_000 now.
+  Mainly to prevent a billion laugh style attacks.
+- The maximum SVG elements nesting is limited by 1024 now.
+- `usvg::Error::ElementsLimitReached`
+
+### Changed
+- Improve clipping and masking performance on large images.
+- Remove layers caching. This was a pointless optimization.
+- Split _Preprocessing_ into _Reading_ and _Parsing_ in `resvg --perf`.
+- `usvg::XmlOptions` rewritten.
+- `usvg::Tree::to_string` requires a reference to `XmlOptions` now.
+
+### Removed
+- `usvg::Tree::from_file`. Use `from_data` or `from_str` instead.
+- `usvg::Error::InvalidFileSuffix`
+- `usvg::Error::FileOpenFailed`
+- (c-api) `RESVG_ERROR_INVALID_FILE_SUFFIX`
+
+### Fixed
+- Ignore tiny blur values. It could lead to a transparent image.
+- `use` style propagation when used with `symbol`.
+- Vertical text layout with relative offsets.
+- Text bbox calculation. `usvg` uses font metrics instead of path bbox now.
+
+## [0.14.1] - 2021-04-18
+### Added
+- Allow `href` without the `xlink` namespace.
+  This feature is part of SVG 2 (which we do not support),
+  but there are more and more files like this in the wild.
+
+### Changed
+- (usvg) Do not write `usvg:version` to the output SVG.
+
+### Fixed
+- (usvg) `overflow='inherit'` resolving.
+- (usvg) SVG Path length calculation that affects `startOffset` property in `textPath`.
+- (usvg) Fix `feImage` resolving when the linked element has
+  `opacity`, `clip-path`, `mask` and/or `filter` attributes.
+- (usvg) Fix chained `feImage` resolving.
+- CLI arguments processing.
+
 ## [0.14.0] - 2021-03-06
 ### Fixed
 - Multiple critical bugs in `tiny-skia`.
@@ -422,7 +739,24 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.29.0...HEAD
+[0.29.0]: https://github.com/RazrFalcon/resvg/compare/v0.28.0...v0.29.0
+[0.28.0]: https://github.com/RazrFalcon/resvg/compare/v0.27.0...v0.28.0
+[0.27.0]: https://github.com/RazrFalcon/resvg/compare/v0.26.1...v0.27.0
+[0.26.1]: https://github.com/RazrFalcon/resvg/compare/v0.26.0...v0.26.1
+[0.26.0]: https://github.com/RazrFalcon/resvg/compare/v0.25.0...v0.26.0
+[0.25.0]: https://github.com/RazrFalcon/resvg/compare/v0.24.0...v0.25.0
+[0.24.0]: https://github.com/RazrFalcon/resvg/compare/v0.23.0...v0.24.0
+[0.23.0]: https://github.com/RazrFalcon/resvg/compare/v0.22.0...v0.23.0
+[0.22.0]: https://github.com/RazrFalcon/resvg/compare/v0.21.0...v0.22.0
+[0.21.0]: https://github.com/RazrFalcon/resvg/compare/v0.20.0...v0.21.0
+[0.20.0]: https://github.com/RazrFalcon/resvg/compare/v0.19.0...v0.20.0
+[0.19.0]: https://github.com/RazrFalcon/resvg/compare/v0.18.0...v0.19.0
+[0.18.0]: https://github.com/RazrFalcon/resvg/compare/v0.17.0...v0.18.0
+[0.17.0]: https://github.com/RazrFalcon/resvg/compare/v0.16.0...v0.17.0
+[0.16.0]: https://github.com/RazrFalcon/resvg/compare/v0.15.0...v0.16.0
+[0.15.0]: https://github.com/RazrFalcon/resvg/compare/v0.14.1...v0.15.0
+[0.14.1]: https://github.com/RazrFalcon/resvg/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/RazrFalcon/resvg/compare/v0.13.1...v0.14.0
 [0.13.1]: https://github.com/RazrFalcon/resvg/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/RazrFalcon/resvg/compare/v0.12.0...v0.13.0
