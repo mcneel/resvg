@@ -8,6 +8,14 @@ cargo build --release
 
 This will produce a dynamic C library that can be found at `../target/release`.
 
+## Windows Rhino Build
+
+```
+cargo build --release
+``
+copy resvg\c-api\resvg.h src4\resvg\resvg.h
+copy resvg\target\release\resvg_rhino.dll src4\resvg\resvg_rhino.dll
+
 ## macOS Universal binary
 
 To build a macOS Universal binary that is compatible with Rhino, run:
