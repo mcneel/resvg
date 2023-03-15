@@ -11,7 +11,7 @@ rustup target add aarch64-apple-darwin
 cargo clean
 
 # Target the same version of macOS that we target in Rhino for Mac
-export MACOSX_DEPLOYMENT_TARGET=11.3
+export MACOSX_DEPLOYMENT_TARGET=12.4
 
 # build for Intel
 cargo build --target=x86_64-apple-darwin --release
