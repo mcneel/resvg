@@ -13,7 +13,7 @@ rustup target add aarch64-apple-ios x86_64-apple-ios
 cargo clean
 
 # build for Apple Silicon
-cargo build --target=aarch64-apple-ios --release
+cargo build --target=aarch64-apple-ios --release --lib
 
 cp ../target/aarch64-apple-ios/release/libresvg_rhino.a libresvg_rhino_ios.a
 

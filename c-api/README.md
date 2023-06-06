@@ -25,3 +25,13 @@ To build a macOS Universal binary that is compatible with Rhino, run:
 ```
 
 and copy the *libresvg_rhino.dylib* to the rhino repository's */src4/rhino4/MacOS/Frameworks/* folder (overwriting the old one).  
+
+## iOS Static library
+
+To build an iOS static library, run:
+
+```
+./build_ios.sh
+```
+
+and copy the *libresvg_rhino_ios.a* to the rhino repository's */src4/resvg/* folder (overwriting the old one).  
