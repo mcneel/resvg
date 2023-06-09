@@ -5,7 +5,7 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::{f64_bound, FuzzyZero, ImageRefMut};
+use crate::{ImageRefMut, FuzzyZero, f64_bound};
 
 const RAND_M: i32 = 2147483647; // 2**31 - 1
 const RAND_A: i32 = 16807; // 7**5; primitive root of m
@@ -64,14 +64,10 @@ pub fn turbulence(
             let (tx, ty) = ((x as f64 + offset_x) / sx, (y as f64 + offset_y) / sy);
             let n = turbulence_impl(
                 channel,
-                tx,
-                ty,
-                x as f64,
-                y as f64,
-                width as f64,
-                height as f64,
-                base_frequency_x,
-                base_frequency_y,
+                tx, ty,
+                x as f64, y as f64,
+                width as f64, height as f64,
+                base_frequency_x, base_frequency_y,
                 num_octaves,
                 fractal_noise,
                 stitch_tiles,
@@ -122,8 +118,8 @@ fn init(mut seed: i32) -> (Vec<usize>, Vec<Vec<Vec<f64>>>) {
                     ((seed % (B_SIZE_32 + B_SIZE_32)) - B_SIZE_32) as f64 / B_SIZE_32 as f64;
             }
 
-            let s = (gradient[k][i][0] * gradient[k][i][0] + gradient[k][i][1] * gradient[k][i][1])
-                .sqrt();
+            let s = (  gradient[k][i][0] * gradient[k][i][0]
+                + gradient[k][i][1] * gradient[k][i][1]).sqrt();
 
             gradient[k][i][0] /= s;
             gradient[k][i][1] /= s;
@@ -140,9 +136,9 @@ fn init(mut seed: i32) -> (Vec<usize>, Vec<Vec<Vec<f64>>>) {
 
     for i in 0..B_SIZE + 2 {
         lattice_selector[B_SIZE + i] = lattice_selector[i];
-        for g in gradient.iter_mut().take(4) {
+        for k in 0..4 {
             for j in 0..2 {
-                g[B_SIZE + i][j] = g[i][j];
+                gradient[k][B_SIZE + i][j] = gradient[k][i][j];
             }
         }
     }
@@ -164,7 +160,7 @@ fn turbulence_impl(
     fractal_sum: bool,
     do_stitching: bool,
     lattice_selector: &[usize],
-    gradient: &[Vec<Vec<f64>>],
+    gradient: &Vec<Vec<Vec<f64>>>,
 ) -> f64 {
     // Adjust the base frequencies if necessary for stitching.
     let mut stitch = if do_stitching {
@@ -237,18 +233,18 @@ fn noise2(
     x: f64,
     y: f64,
     lattice_selector: &[usize],
-    gradient: &[Vec<Vec<f64>>],
+    gradient: &Vec<Vec<Vec<f64>>>,
     stitch_info: Option<StitchInfo>,
 ) -> f64 {
     let t = x + PERLIN_N as f64;
     let mut bx0 = t as i32;
     let mut bx1 = bx0 + 1;
-    let rx0 = t - t as i64 as f64;
+    let rx0 = t.fract();
     let rx1 = rx0 - 1.0;
     let t = y + PERLIN_N as f64;
     let mut by0 = t as i32;
     let mut by1 = by0 + 1;
-    let ry0 = t - t as i64 as f64;
+    let ry0 = t.fract();
     let ry1 = ry0 - 1.0;
 
     // If stitching, adjust lattice points accordingly.

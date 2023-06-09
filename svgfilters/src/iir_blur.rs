@@ -49,7 +49,11 @@ struct BlurData {
 /// # Allocations
 ///
 /// This method will allocate a 2x `src` buffer.
-pub fn iir_blur(sigma_x: f64, sigma_y: f64, src: ImageRefMut) {
+pub fn iir_blur(
+    sigma_x: f64,
+    sigma_y: f64,
+    src: ImageRefMut,
+) {
     let buf_size = (src.width * src.height) as usize;
     let mut buf = vec![0.0; buf_size];
     let buf = &mut buf;
@@ -69,7 +73,12 @@ pub fn iir_blur(sigma_x: f64, sigma_y: f64, src: ImageRefMut) {
     gaussian_channel(data, &d, 3, buf);
 }
 
-fn gaussian_channel(data: &mut [u8], d: &BlurData, channel: usize, buf: &mut Vec<f64>) {
+fn gaussian_channel(
+    data: &mut [u8],
+    d: &BlurData,
+    channel: usize,
+    buf: &mut Vec<f64>,
+) {
     for i in 0..data.len() / 4 {
         buf[i] = data[i * 4 + channel] as f64 / 255.0;
     }
@@ -81,7 +90,10 @@ fn gaussian_channel(data: &mut [u8], d: &BlurData, channel: usize, buf: &mut Vec
     }
 }
 
-fn gaussianiir2d(d: &BlurData, buf: &mut Vec<f64>) {
+fn gaussianiir2d(
+    d: &BlurData,
+    buf: &mut Vec<f64>,
+) {
     // Filter horizontally along each row.
     let (lambda_x, dnu_x) = if d.sigma_x > 0.0 {
         let (lambda, dnu) = gen_coefficients(d.sigma_x, d.steps);
@@ -139,8 +151,7 @@ fn gaussianiir2d(d: &BlurData, buf: &mut Vec<f64>) {
         (1.0, 1.0)
     };
 
-    let post_scale =
-        ((dnu_x * dnu_y).sqrt() / (lambda_x * lambda_y).sqrt()).powi(2 * d.steps as i32);
+    let post_scale = ((dnu_x * dnu_y).sqrt() / (lambda_x * lambda_y).sqrt()).powi(2 * d.steps as i32);
     buf.iter_mut().for_each(|v| *v *= post_scale);
 }
 

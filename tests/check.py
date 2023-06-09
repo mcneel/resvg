@@ -92,7 +92,6 @@ def check_node_ids():
         'feSpotLight',
         'feTile',
         'feTurbulence',
-        'feDropShadow',
     ]
 
     for file in ignore_files:

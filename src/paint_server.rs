@@ -2,20 +2,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{
-    render::{Canvas, RenderState},
-    ConvTransform, OptionLog,
-};
+use crate::render::prelude::*;
 
 pub fn fill(
     tree: &usvg::Tree,
     fill: &usvg::Fill,
-    bbox: usvg::PathBbox,
+    bbox: Rect,
     path: &tiny_skia::Path,
     anti_alias: bool,
     blend_mode: tiny_skia::BlendMode,
     canvas: &mut Canvas,
-) -> Option<()> {
+) {
     let pattern_pixmap;
 
     let mut paint = tiny_skia::Paint::default();
@@ -25,18 +22,26 @@ pub fn fill(
         usvg::Paint::Color(c) => {
             paint.set_color_rgba8(c.red, c.green, c.blue, opacity.to_u8());
         }
-        usvg::Paint::LinearGradient(ref lg) => {
-            prepare_linear(lg, opacity, bbox, &mut paint);
-        }
-        usvg::Paint::RadialGradient(ref rg) => {
-            prepare_radial(rg, opacity, bbox, &mut paint);
-        }
-        usvg::Paint::Pattern(ref pattern) => {
-            let global_ts = usvg::Transform::from_native(canvas.transform);
-            let (patt_pix, patt_ts) = prepare_pattern_pixmap(tree, pattern, &global_ts, bbox)?;
+        usvg::Paint::Link(ref id) => {
+            if let Some(node) = tree.defs_by_id(id) {
+                match *node.borrow() {
+                    usvg::NodeKind::LinearGradient(ref lg) => {
+                        prepare_linear(lg, opacity, bbox, &mut paint);
+                    }
+                    usvg::NodeKind::RadialGradient(ref rg) => {
+                        prepare_radial(rg, opacity, bbox, &mut paint);
+                    }
+                    usvg::NodeKind::Pattern(ref pattern) => {
+                        let global_ts = usvg::Transform::from_native(canvas.transform);
+                        let (patt_pix, patt_ts)
+                            = try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
 
-            pattern_pixmap = patt_pix;
-            paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
+                        pattern_pixmap = patt_pix;
+                        paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
+                    }
+                    _ => {}
+                }
+            }
         }
     }
 
@@ -49,22 +54,18 @@ pub fn fill(
         tiny_skia::FillRule::EvenOdd
     };
 
-    canvas
-        .pixmap
-        .fill_path(path, &paint, rule, canvas.transform, canvas.clip.as_ref());
-
-    Some(())
+    canvas.pixmap.fill_path(path, &paint, rule, canvas.transform, canvas.clip.as_ref());
 }
 
 pub fn stroke(
     tree: &usvg::Tree,
     stroke: &Option<usvg::Stroke>,
-    bbox: usvg::PathBbox,
+    bbox: Rect,
     path: &tiny_skia::Path,
     anti_alias: bool,
     blend_mode: tiny_skia::BlendMode,
     canvas: &mut Canvas,
-) -> Option<()> {
+) {
     let pattern_pixmap;
 
     let mut paint = tiny_skia::Paint::default();
@@ -76,18 +77,26 @@ pub fn stroke(
             usvg::Paint::Color(c) => {
                 paint.set_color_rgba8(c.red, c.green, c.blue, opacity.to_u8());
             }
-            usvg::Paint::LinearGradient(ref lg) => {
-                prepare_linear(lg, opacity, bbox, &mut paint);
-            }
-            usvg::Paint::RadialGradient(ref rg) => {
-                prepare_radial(rg, opacity, bbox, &mut paint);
-            }
-            usvg::Paint::Pattern(ref pattern) => {
-                let global_ts = usvg::Transform::from_native(canvas.transform);
-                let (patt_pix, patt_ts) = prepare_pattern_pixmap(tree, pattern, &global_ts, bbox)?;
+            usvg::Paint::Link(ref id) => {
+                if let Some(node) = tree.defs_by_id(id) {
+                    match *node.borrow() {
+                        usvg::NodeKind::LinearGradient(ref lg) => {
+                            prepare_linear(lg, opacity, bbox, &mut paint);
+                        }
+                        usvg::NodeKind::RadialGradient(ref rg) => {
+                            prepare_radial(rg, opacity, bbox, &mut paint);
+                        }
+                        usvg::NodeKind::Pattern(ref pattern) => {
+                            let global_ts = usvg::Transform::from_native(canvas.transform);
+                            let (patt_pix, patt_ts)
+                                = try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
 
-                pattern_pixmap = patt_pix;
-                paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
+                            pattern_pixmap = patt_pix;
+                            paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
+                        }
+                        _ => {}
+                    }
+                }
             }
         }
 
@@ -105,8 +114,8 @@ pub fn stroke(
         };
         props.line_join = stroke_join;
 
-        props.miter_limit = stroke.miterlimit.get() as f32;
-        props.width = stroke.width.get() as f32;
+        props.miter_limit = stroke.miterlimit.value() as f32;
+        props.width = stroke.width.value() as f32;
 
         if let Some(ref list) = stroke.dasharray {
             let list: Vec<_> = list.iter().map(|n| *n as f32).collect();
@@ -117,19 +126,15 @@ pub fn stroke(
     paint.anti_alias = anti_alias;
     paint.blend_mode = blend_mode;
 
-    canvas
-        .pixmap
-        .stroke_path(path, &paint, &props, canvas.transform, canvas.clip.as_ref());
-
-    Some(())
+    canvas.pixmap.stroke_path(&path, &paint, &props, canvas.transform, canvas.clip.as_ref());
 }
 
 fn prepare_linear(
     g: &usvg::LinearGradient,
     opacity: usvg::Opacity,
-    bbox: usvg::PathBbox,
+    bbox: Rect,
     paint: &mut tiny_skia::Paint,
-) -> Option<()> {
+) {
     let mode = match g.spread_method {
         usvg::SpreadMethod::Pad => tiny_skia::SpreadMode::Pad,
         usvg::SpreadMethod::Reflect => tiny_skia::SpreadMode::Reflect,
@@ -138,10 +143,6 @@ fn prepare_linear(
 
     let transform = {
         if g.units == usvg::Units::ObjectBoundingBox {
-            let bbox = bbox
-                .to_rect()
-                .log_none(|| log::warn!("Gradient on zero-sized shapes is not allowed."))?;
-
             let mut ts = usvg::Transform::from_bbox(bbox);
             ts.append(&g.transform);
             ts.to_native()
@@ -152,17 +153,9 @@ fn prepare_linear(
 
     let mut points = Vec::with_capacity(g.stops.len());
     for stop in &g.stops {
-        let alpha = stop.opacity * opacity;
-        let color = tiny_skia::Color::from_rgba8(
-            stop.color.red,
-            stop.color.green,
-            stop.color.blue,
-            alpha.to_u8(),
-        );
-        points.push(tiny_skia::GradientStop::new(
-            stop.offset.get() as f32,
-            color,
-        ))
+        let a = stop.opacity * opacity;
+        let color = tiny_skia::Color::from_rgba8(stop.color.red, stop.color.green, stop.color.blue, a.to_u8());
+        points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
     }
 
     let gradient = tiny_skia::LinearGradient::new(
@@ -176,16 +169,14 @@ fn prepare_linear(
     if let Some(gradient) = gradient {
         paint.shader = gradient;
     }
-
-    Some(())
 }
 
 fn prepare_radial(
     g: &usvg::RadialGradient,
     opacity: usvg::Opacity,
-    bbox: usvg::PathBbox,
+    bbox: Rect,
     paint: &mut tiny_skia::Paint,
-) -> Option<()> {
+) {
     let mode = match g.spread_method {
         usvg::SpreadMethod::Pad => tiny_skia::SpreadMode::Pad,
         usvg::SpreadMethod::Reflect => tiny_skia::SpreadMode::Reflect,
@@ -194,10 +185,6 @@ fn prepare_radial(
 
     let transform = {
         if g.units == usvg::Units::ObjectBoundingBox {
-            let bbox = bbox
-                .to_rect()
-                .log_none(|| log::warn!("Gradient on zero-sized shapes is not allowed."))?;
-
             let mut ts = usvg::Transform::from_bbox(bbox);
             ts.append(&g.transform);
             ts.to_native()
@@ -208,23 +195,15 @@ fn prepare_radial(
 
     let mut points = Vec::with_capacity(g.stops.len());
     for stop in &g.stops {
-        let alpha = stop.opacity * opacity;
-        let color = tiny_skia::Color::from_rgba8(
-            stop.color.red,
-            stop.color.green,
-            stop.color.blue,
-            alpha.to_u8(),
-        );
-        points.push(tiny_skia::GradientStop::new(
-            stop.offset.get() as f32,
-            color,
-        ))
+        let a = stop.opacity * opacity;
+        let color = tiny_skia::Color::from_rgba8(stop.color.red, stop.color.green, stop.color.blue, a.to_u8());
+        points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
     }
 
     let gradient = tiny_skia::RadialGradient::new(
         (g.fx as f32, g.fy as f32).into(),
         (g.cx as f32, g.cy as f32).into(),
-        g.r.get() as f32,
+        g.r.value() as f32,
         points,
         mode,
         transform,
@@ -233,31 +212,23 @@ fn prepare_radial(
     if let Some(gradient) = gradient {
         paint.shader = gradient;
     }
-
-    Some(())
 }
 
 fn prepare_pattern_pixmap(
-    tree: &usvg::Tree,
+    pattern_node: &usvg::Node,
     pattern: &usvg::Pattern,
     global_ts: &usvg::Transform,
-    bbox: usvg::PathBbox,
+    bbox: Rect,
 ) -> Option<(tiny_skia::Pixmap, usvg::Transform)> {
     let r = if pattern.units == usvg::Units::ObjectBoundingBox {
-        let bbox = bbox
-            .to_rect()
-            .log_none(|| log::warn!("Pattern on zero-sized shapes is not allowed."))?;
-
         pattern.rect.bbox_transform(bbox)
     } else {
         pattern.rect
     };
 
-    let mut ts2 = *global_ts;
-    ts2.append(&pattern.transform);
-    let (sx, sy) = ts2.get_scale();
+    let (sx, sy) = global_ts.get_scale();
 
-    let img_size = usvg::Size::new(r.width() * sx, r.height() * sy)?.to_screen_size();
+    let img_size = Size::new(r.width() * sx as f64, r.height() * sy as f64)?.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
     let mut canvas = Canvas::from(pixmap.as_mut());
 
@@ -273,12 +244,13 @@ fn prepare_pattern_pixmap(
         canvas.scale(bbox.width() as f32, bbox.height() as f32);
     }
 
-    crate::render::render_group(tree, &pattern.root, &mut RenderState::Ok, &mut canvas);
+    let mut layers = Layers::new(img_size);
+    crate::render::render_group(pattern_node, &mut RenderState::Ok, &mut layers, &mut canvas);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);
     ts.translate(r.x(), r.y());
-    ts.scale(1.0 / sx, 1.0 / sy);
+    ts.scale(1.0 / sx as f64, 1.0 / sy as f64);
 
     Some((pixmap, ts))
 }
@@ -292,7 +264,7 @@ fn prepare_pattern(
         pixmap.as_ref(),
         tiny_skia::SpreadMode::Repeat,
         tiny_skia::FilterQuality::Bicubic,
-        opacity.get() as f32,
+        opacity.value() as f32,
         ts.to_native(),
     )
 }

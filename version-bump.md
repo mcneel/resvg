@@ -1,11 +1,13 @@
-- .github/chart.svg
-- .github/chart-svg2.svg
+- .github/*
 - CHANGELOG.md
 - Cargo.toml
+- src/lib.rs
 - c-api/Cargo.toml
 - c-api/resvg.h
 - c-api/ResvgQt.h
 - usvg/Cargo.toml
-- usvg-text-layout/Cargo.toml
+- usvg/src/lib.rs
+- usvg/tests/files/*
 - tools/explorer-thumbnailer/install/installer.iss
 - tools/explorer-thumbnailer/Cargo.toml
+- make-vendored.sh

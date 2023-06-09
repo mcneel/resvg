@@ -14,9 +14,9 @@
 #define RESVG_QT_H
 
 #define RESVG_QT_MAJOR_VERSION 0
-#define RESVG_QT_MINOR_VERSION 29
+#define RESVG_QT_MINOR_VERSION 14
 #define RESVG_QT_PATCH_VERSION 0
-#define RESVG_QT_VERSION "0.29.0"
+#define RESVG_QT_VERSION "0.14.0"
 
 #include <QDebug>
 #include <QFile>
@@ -76,10 +76,10 @@ static QString errorToString(const int err)
             return QLatin1String("The SVG content has not an UTF-8 encoding.");
         case RESVG_ERROR_FILE_OPEN_FAILED :
             return QLatin1String("Failed to read the file.");
+        case RESVG_ERROR_INVALID_FILE_SUFFIX :
+            return QLatin1String("Invalid file suffix.");
         case RESVG_ERROR_MALFORMED_GZIP :
             return QLatin1String("Not a GZip compressed data.");
-        case RESVG_ERROR_ELEMENTS_LIMIT_REACHED :
-            return QLatin1String("Too many elements.");
         case RESVG_ERROR_INVALID_SIZE :
             return QLatin1String("SVG doesn't have a valid size.");
         case RESVG_ERROR_PARSING_FAILED :
@@ -228,6 +228,18 @@ public:
     }
 
     /**
+     * @brief Keep named groups.
+     *
+     * If set to `true`, all non-empty groups with `id` attribute will not be removed.
+     *
+     * Default: false
+     */
+    void setKeepNamedGroups(const bool keep)
+    {
+        resvg_options_set_keep_named_groups(d, keep);
+    }
+
+    /**
      * @brief Loads a font data into the internal fonts database.
      *
      * Prints a warning into the log when the data is not a valid TrueType font.
@@ -319,16 +331,18 @@ public:
         // Check for Qt resource path.
         if (filePath.startsWith(QLatin1String(":/"))) {
             QFile file(filePath);
-            if (file.open(QFile::ReadOnly))
+            if (file.open(QFile::ReadOnly)) {
                 return load(file.readAll(), opt);
-            else
+            } else {
                 return false;
+            }
         }
 
         d->reset();
 
         auto filePathC = filePath.toUtf8();
         filePathC.append('\0');
+//        resvg_options_set_file_path(opt.d, filePathC.constData());
 
         const auto err = resvg_parse_tree_from_file(filePathC.constData(), opt.d, &d->tree);
         if (err != RESVG_OK) {
@@ -361,9 +375,6 @@ public:
         const auto r = resvg_get_image_viewbox(d->tree);
         d->viewBox = QRectF(r.x, r.y, r.width, r.height);
 
-        const auto s = resvg_get_image_size(d->tree);
-        d->size = QSizeF(s.width, s.height);
-
         return true;
     }
 
@@ -390,12 +401,12 @@ public:
      * will set an error only if a file does not exist or it has a non-UTF-8 encoding.
      * All other errors will result in an empty tree with a 100x100px size.
      *
-     * @return Returns \b true if tree has no nodes.
+     * @return Returns \b true if tree has any nodes.
      */
     bool isEmpty() const
     {
         if (d->tree)
-            return resvg_is_image_empty(d->tree);
+            return !resvg_is_image_empty(d->tree);
         else
             return true;
     }
@@ -458,7 +469,7 @@ public:
 
         const auto utf8Str = id.toUtf8();
         const auto rawId = utf8Str.constData();
-        resvg_path_bbox bbox;
+        resvg_rect bbox;
         if (resvg_get_node_bbox(d->tree, rawId, &bbox))
             return QRectF(bbox.x, bbox.y, bbox.width, bbox.height);
 
@@ -519,21 +530,21 @@ public:
      */
     QImage renderToImage(const QSize &size = QSize()) const
     {
-        resvg_transform ts = resvg_transform_identity();
-        resvg_fit_to fit_to = { RESVG_FIT_TO_TYPE_ORIGINAL, 1 };
+        resvg_fit_to fit_to = { RESVG_FIT_TO_ORIGINAL, 1 };
         if (size.isValid()) {
             // TODO: support height too.
-            fit_to.type = RESVG_FIT_TO_TYPE_WIDTH;
+            fit_to.type = RESVG_FIT_TO_WIDTH;
             fit_to.value = size.width();
         }
 
         auto svgSize = size;
-        if (svgSize.isEmpty())
+        if (svgSize.isEmpty()) {
             svgSize = defaultSize();
+        }
 
         QImage qImg(svgSize.width(), svgSize.height(), QImage::Format_ARGB32_Premultiplied);
         qImg.fill(Qt::transparent);
-        resvg_render(d->tree, fit_to, ts, qImg.width(), qImg.height(), (char*)qImg.bits());
+        resvg_render(d->tree, fit_to, qImg.width(), qImg.height(), (char*)qImg.bits());
 
         // resvg renders onto the RGBA canvas, while QImage is ARGB.
         // std::move is required to call inplace version of rgbSwapped().

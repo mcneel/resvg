@@ -15,99 +15,16 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #define RESVG_MAJOR_VERSION 0
-#define RESVG_MINOR_VERSION 29
+#define RESVG_MINOR_VERSION 14
 #define RESVG_PATCH_VERSION 0
-#define RESVG_VERSION "0.29.0"
+#define RESVG_VERSION "0.14.0"
 
-/**
- * @brief List of possible errors.
- */
-typedef enum {
-    /**
-     * Everything is ok.
-     */
-    RESVG_OK = 0,
-    /**
-     * Only UTF-8 content are supported.
-     */
-    RESVG_ERROR_NOT_AN_UTF8_STR,
-    /**
-     * Failed to open the provided file.
-     */
-    RESVG_ERROR_FILE_OPEN_FAILED,
-    /**
-     * Compressed SVG must use the GZip algorithm.
-     */
-    RESVG_ERROR_MALFORMED_GZIP,
-    /**
-     * We do not allow SVG with more than 1_000_000 elements for security reasons.
-     */
-    RESVG_ERROR_ELEMENTS_LIMIT_REACHED,
-    /**
-     * SVG doesn't have a valid size.
-     *
-     * Occurs when width and/or height are <= 0.
-     *
-     * Also occurs if width, height and viewBox are not set.
-     */
-    RESVG_ERROR_INVALID_SIZE,
-    /**
-     * Failed to parse an SVG data.
-     */
-    RESVG_ERROR_PARSING_FAILED,
-} resvg_error;
-
-/**
- * @brief A "fit to" type.
- *
- * All types produce proportional scaling.
- */
-typedef enum {
-    /**
-     * Use an original image size.
-     */
-    RESVG_FIT_TO_TYPE_ORIGINAL,
-    /**
-     * Fit an image to a specified width.
-     */
-    RESVG_FIT_TO_TYPE_WIDTH,
-    /**
-     * Fit an image to a specified height.
-     */
-    RESVG_FIT_TO_TYPE_HEIGHT,
-    /**
-     * Zoom an image using scaling factor.
-     */
-    RESVG_FIT_TO_TYPE_ZOOM,
-} resvg_fit_to_type;
-
-/**
- * @brief A image rendering method.
- */
-typedef enum {
-    RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY,
-    RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED,
-} resvg_image_rendering;
-
-/**
- * @brief A shape rendering method.
- */
-typedef enum {
-    RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED,
-    RESVG_SHAPE_RENDERING_CRISP_EDGES,
-    RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION,
-} resvg_shape_rendering;
-
-/**
- * @brief A text rendering method.
- */
-typedef enum {
-    RESVG_TEXT_RENDERING_OPTIMIZE_SPEED,
-    RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
-    RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION,
-} resvg_text_rendering;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief An SVG to #resvg_render_tree conversion options.
@@ -123,59 +40,50 @@ typedef struct resvg_options resvg_options;
 typedef struct resvg_render_tree resvg_render_tree;
 
 /**
- * @brief A 2D transform representation.
+ * @brief List of possible errors.
  */
-typedef struct {
-    double a;
-    double b;
-    double c;
-    double d;
-    double e;
-    double f;
-} resvg_transform;
+typedef enum resvg_error {
+    /** Everything is ok. */
+    RESVG_OK = 0,
+    /** Only UTF-8 content are supported. */
+    RESVG_ERROR_NOT_AN_UTF8_STR,
+    /** Failed to open the provided file. */
+    RESVG_ERROR_FILE_OPEN_FAILED,
+    /** Only `svg` and `svgz` suffixes are supported. */
+    RESVG_ERROR_INVALID_FILE_SUFFIX,
+    /** Compressed SVG must use the GZip algorithm. */
+    RESVG_ERROR_MALFORMED_GZIP,
+    /**
+     * SVG doesn't have a valid size.
+     *
+     * Occurs when width and/or height are <= 0.
+     *
+     * Also occurs if width, height and viewBox are not set.
+     * This is against the SVG spec, but an automatic size detection is not supported yet.
+     */
+    RESVG_ERROR_INVALID_SIZE,
+    /** Failed to parse an SVG data. */
+    RESVG_ERROR_PARSING_FAILED,
+} resvg_error;
 
 /**
- * @brief A size representation.
+ * @brief A "fit to" type.
  *
- * Width and height are guarantee to be > 0.
+ * All types produce proportional scaling.
  */
-typedef struct {
-    double width;
-    double height;
-} resvg_size;
-
-/**
- * @brief A rectangle representation.
- *
- * Width *and* height are guarantee to be > 0.
- */
-typedef struct {
-    double x;
-    double y;
-    double width;
-    double height;
-} resvg_rect;
-
-/**
- * @brief A path bbox representation.
- *
- * Width *or* height are guarantee to be > 0.
- */
-typedef struct {
-    double x;
-    double y;
-    double width;
-    double height;
-} resvg_path_bbox;
+typedef enum resvg_fit_to_type {
+    RESVG_FIT_TO_ORIGINAL, /**< Use an original image size. */
+    RESVG_FIT_TO_WIDTH, /**< Fit an image to a specified width. */
+    RESVG_FIT_TO_HEIGHT, /**< Fit an image to a specified height. */
+    RESVG_FIT_TO_ZOOM, /**< Zoom an image using scaling factor */
+} resvg_fit_to_type;
 
 /**
  * @brief A "fit to" property.
  */
-typedef struct {
-    /**
-     * A fit type.
-     */
-    resvg_fit_to_type type;
+typedef struct resvg_fit_to {
+    resvg_fit_to_type type; /**< Fit type. */
+
     /**
      * @brief Fit to value
      *
@@ -186,14 +94,61 @@ typedef struct {
     float value;
 } resvg_fit_to;
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
+/**
+ * @brief A shape rendering method.
+ */
+typedef enum resvg_shape_rendering {
+    RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED,
+    RESVG_SHAPE_RENDERING_CRISP_EDGES,
+    RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION,
+} resvg_shape_rendering;
 
 /**
- * @brief Creates an identity transform.
+ * @brief A text rendering method.
  */
-resvg_transform resvg_transform_identity(void);
+typedef enum resvg_text_rendering {
+    RESVG_TEXT_RENDERING_OPTIMIZE_SPEED,
+    RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
+    RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION,
+} resvg_text_rendering;
+
+/**
+ * @brief An image rendering method.
+ */
+typedef enum resvg_image_rendering {
+    RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY,
+    RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED,
+} resvg_image_rendering;
+
+/**
+ * @brief A rectangle representation.
+ */
+typedef struct resvg_rect {
+    double x;
+    double y;
+    double width;
+    double height;
+} resvg_rect;
+
+/**
+ * @brief A size representation.
+ */
+typedef struct resvg_size {
+    double width;
+    double height;
+} resvg_size;
+
+/**
+ * @brief A 2D transform representation.
+ */
+typedef struct resvg_transform {
+    double a;
+    double b;
+    double c;
+    double d;
+    double e;
+    double f;
+} resvg_transform;
 
 /**
  * @brief Initializes the library log.
@@ -204,14 +159,14 @@ resvg_transform resvg_transform_identity(void);
  *
  * All warnings will be printed to the `stderr`.
  */
-void resvg_init_log(void);
+void resvg_init_log();
 
 /**
  * @brief Creates a new #resvg_options object.
  *
  * Should be destroyed via #resvg_options_destroy.
  */
-resvg_options *resvg_options_create(void);
+resvg_options* resvg_options_create();
 
 /**
  * @brief Sets a directory that will be used during relative paths resolving.
@@ -259,8 +214,6 @@ void resvg_options_set_font_size(resvg_options *opt, double size);
  *
  * Must be UTF-8. NULL is not allowed.
  *
- * Has no effect when the `text` feature is not enabled.
- *
  * Default: Times New Roman
  */
 void resvg_options_set_serif_family(resvg_options *opt, const char *family);
@@ -269,8 +222,6 @@ void resvg_options_set_serif_family(resvg_options *opt, const char *family);
  * @brief Sets the `sans-serif` font family.
  *
  * Must be UTF-8. NULL is not allowed.
- *
- * Has no effect when the `text` feature is not enabled.
  *
  * Default: Arial
  */
@@ -281,8 +232,6 @@ void resvg_options_set_sans_serif_family(resvg_options *opt, const char *family)
  *
  * Must be UTF-8. NULL is not allowed.
  *
- * Has no effect when the `text` feature is not enabled.
- *
  * Default: Comic Sans MS
  */
 void resvg_options_set_cursive_family(resvg_options *opt, const char *family);
@@ -292,8 +241,6 @@ void resvg_options_set_cursive_family(resvg_options *opt, const char *family);
  *
  * Must be UTF-8. NULL is not allowed.
  *
- * Has no effect when the `text` feature is not enabled.
- *
  * Default: Papyrus on macOS, Impact on other OS'es
  */
 void resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
@@ -302,8 +249,6 @@ void resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
  * @brief Sets the `monospace` font family.
  *
  * Must be UTF-8. NULL is not allowed.
- *
- * Has no effect when the `text` feature is not enabled.
  *
  * Default: Courier New
  */
@@ -350,24 +295,29 @@ void resvg_options_set_text_rendering_mode(resvg_options *opt, resvg_text_render
 void resvg_options_set_image_rendering_mode(resvg_options *opt, resvg_image_rendering mode);
 
 /**
+ * @brief Keep named groups.
+ *
+ * If set to `true`, all non-empty groups with `id` attribute will not be removed.
+ *
+ * Default: false
+ */
+void resvg_options_set_keep_named_groups(resvg_options *opt, bool keep);
+
+/**
  * @brief Loads a font data into the internal fonts database.
  *
  * Prints a warning into the log when the data is not a valid TrueType font.
- *
- * Has no effect when the `text` feature is not enabled.
  */
-void resvg_options_load_font_data(resvg_options *opt, const char *data, uintptr_t len);
+void resvg_options_load_font_data(resvg_options *opt, const char *data, size_t len);
 
 /**
  * @brief Loads a font file into the internal fonts database.
  *
  * Prints a warning into the log when the data is not a valid TrueType font.
  *
- * Has no effect when the `text` feature is not enabled.
- *
  * @return #resvg_error with RESVG_OK, RESVG_ERROR_NOT_AN_UTF8_STR or RESVG_ERROR_FILE_OPEN_FAILED
  */
-int32_t resvg_options_load_font_file(resvg_options *opt, const char *file_path);
+int resvg_options_load_font_file(resvg_options *opt, const char *file_path);
 
 /**
  * @brief Loads system fonts into the internal fonts database.
@@ -380,8 +330,6 @@ int32_t resvg_options_load_font_file(resvg_options *opt, const char *file_path);
  * Please send a bug report in this case.
  *
  * Prints warnings into the log.
- *
- * Has no effect when the `text` feature is not enabled.
  */
 void resvg_options_load_system_fonts(resvg_options *opt);
 
@@ -398,35 +346,35 @@ void resvg_options_destroy(resvg_options *opt);
  * See #resvg_is_image_empty for details.
  *
  * @param file_path UTF-8 file path.
- * @param opt Rendering options. Must not be NULL.
+ * @param opt Rendering options.
  * @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
  * @return #resvg_error
  */
-int32_t resvg_parse_tree_from_file(const char *file_path,
-                                   const resvg_options *opt,
-                                   resvg_render_tree **tree);
+int resvg_parse_tree_from_file(const char *file_path,
+                               const resvg_options *opt,
+                               resvg_render_tree **tree);
 
 /**
  * @brief Creates #resvg_render_tree from data.
  *
  * See #resvg_is_image_empty for details.
  *
- * @param data SVG data. Can contain SVG string or gzip compressed data. Must not be NULL.
+ * @param data SVG data. Can contain SVG string or gzip compressed data.
  * @param len Data length.
- * @param opt Rendering options. Must not be NULL.
+ * @param opt Rendering options.
  * @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
  * @return #resvg_error
  */
-int32_t resvg_parse_tree_from_data(const char *data,
-                                   uintptr_t len,
-                                   const resvg_options *opt,
-                                   resvg_render_tree **tree);
+int resvg_parse_tree_from_data(const char *data,
+                               const size_t len,
+                               const resvg_options *opt,
+                               resvg_render_tree **tree);
 
 /**
  * @brief Checks that tree has any nodes.
  *
  * @param tree Render tree.
- * @return Returns `true` if tree has no nodes.
+ * @return Returns `true` if tree has any nodes.
  */
 bool resvg_is_image_empty(const resvg_render_tree *tree);
 
@@ -461,44 +409,48 @@ resvg_rect resvg_get_image_viewbox(const resvg_render_tree *tree);
  * @param bbox Image's bounding box.
  * @return `false` if an image has no elements.
  */
-bool resvg_get_image_bbox(const resvg_render_tree *tree, resvg_rect *bbox);
+bool resvg_get_image_bbox(const resvg_render_tree *tree,
+                          resvg_rect *bbox);
 
 /**
  * @brief Returns `true` if a renderable node with such an ID exists.
  *
  * @param tree Render tree.
- * @param id Node's ID. UTF-8 string. Must not be NULL.
+ * @param id Node's ID. UTF-8 string.
  * @return `true` if a node exists.
  * @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
  * @return `false` if a node exists, but not renderable.
  */
-bool resvg_node_exists(const resvg_render_tree *tree, const char *id);
+bool resvg_node_exists(const resvg_render_tree *tree,
+                       const char *id);
 
 /**
  * @brief Returns node's transform by ID.
  *
  * @param tree Render tree.
- * @param id Node's ID. UTF-8 string. Must not be NULL.
- * @param transform Node's transform.
+ * @param id Node's ID. UTF-8 string.
+ * @param ts Node's transform.
  * @return `true` if a node exists.
  * @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
  * @return `false` if a node exists, but not renderable.
  */
 bool resvg_get_node_transform(const resvg_render_tree *tree,
                               const char *id,
-                              resvg_transform *transform);
+                              resvg_transform *ts);
 
 /**
  * @brief Returns node's bounding box by ID.
  *
  * @param tree Render tree.
- * @param id Node's ID. Must not be NULL.
+ * @param id Node's ID.
  * @param bbox Node's bounding box.
  * @return `false` if a node with such an ID does not exist
  * @return `false` if ID isn't a UTF-8 string.
  * @return `false` if ID is an empty string
  */
-bool resvg_get_node_bbox(const resvg_render_tree *tree, const char *id, resvg_path_bbox *bbox);
+bool resvg_get_node_bbox(const resvg_render_tree *tree,
+                         const char *id,
+                         resvg_rect *bbox);
 
 /**
  * @brief Destroys the #resvg_render_tree.
@@ -510,7 +462,6 @@ void resvg_tree_destroy(resvg_render_tree *tree);
  *
  * @param tree A render tree.
  * @param fit_to Specifies into which region SVG should be fit.
- * @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
  * @param width Pixmap width.
  * @param height Pixmap height.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
@@ -518,18 +469,16 @@ void resvg_tree_destroy(resvg_render_tree *tree);
  */
 void resvg_render(const resvg_render_tree *tree,
                   resvg_fit_to fit_to,
-                  resvg_transform transform,
                   uint32_t width,
                   uint32_t height,
-                  char *pixmap);
+                  char* pixmap);
 
 /**
  * @brief Renders a Node by ID onto the image.
  *
  * @param tree A render tree.
- * @param id Node's ID. Must not be NULL.
+ * @param id Node's ID.
  * @param fit_to Specifies into which region the image should be fit.
- * @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
  * @param width Pixmap width.
  * @param height Pixmap height.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
@@ -541,13 +490,12 @@ void resvg_render(const resvg_render_tree *tree,
 bool resvg_render_node(const resvg_render_tree *tree,
                        const char *id,
                        resvg_fit_to fit_to,
-                       resvg_transform transform,
                        uint32_t width,
                        uint32_t height,
-                       char *pixmap);
+                       char* pixmap);
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+}
+#endif
 
 #endif /* RESVG_H */

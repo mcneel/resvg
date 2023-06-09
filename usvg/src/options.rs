@@ -2,11 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageHrefResolver, ImageRendering, ScreenSize, ShapeRendering, Size, TextRendering};
+use std::path::PathBuf;
+
+use crate::{ImageRendering, ShapeRendering, TextRendering, Size, ScreenSize};
+
 
 /// Image fit options.
-///
-/// All variants will preserve the original aspect.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum FitTo {
     /// Keep original size.
@@ -15,8 +16,6 @@ pub enum FitTo {
     Width(u32),
     /// Scale to height.
     Height(u32),
-    /// Scale to size.
-    Size(u32, u32),
     /// Zoom by factor.
     Zoom(f32),
 }
@@ -27,7 +26,9 @@ impl FitTo {
         let sizef = size.to_size();
 
         match *self {
-            FitTo::Original => Some(size),
+            FitTo::Original => {
+                Some(size)
+            }
             FitTo::Width(w) => {
                 let h = (w as f64 * sizef.height() / sizef.width()).ceil();
                 ScreenSize::new(w, h as u32)
@@ -36,19 +37,17 @@ impl FitTo {
                 let w = (h as f64 * sizef.width() / sizef.height()).ceil();
                 ScreenSize::new(w as u32, h)
             }
-            FitTo::Size(w, h) => Some(
-                sizef
-                    .scale_to(Size::new(w as f64, h as f64)?)
-                    .to_screen_size(),
-            ),
-            FitTo::Zoom(z) => Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
-                .map(|s| s.to_screen_size()),
+            FitTo::Zoom(z) => {
+                Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
+                    .map(|s| s.to_screen_size())
+            }
         }
     }
 }
 
+
 /// Processing options.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Options {
     /// Directory that will be used during relative paths resolving.
     ///
@@ -56,7 +55,7 @@ pub struct Options {
     /// but can be set to any.
     ///
     /// Default: `None`
-    pub resources_dir: Option<std::path::PathBuf>,
+    pub resources_dir: Option<PathBuf>,
 
     /// Target DPI.
     ///
@@ -85,7 +84,7 @@ pub struct Options {
     ///
     /// Format: en, en-US.
     ///
-    /// Default: `[en]`
+    /// Default: [en]
     pub languages: Vec<String>,
 
     /// Specifies the default shape rendering method.
@@ -109,16 +108,31 @@ pub struct Options {
     /// Default: OptimizeQuality
     pub image_rendering: ImageRendering,
 
-    /// Default viewport size to assume if there is no `viewBox` attribute and
-    /// the `width` or `height` attributes are relative.
+    /// Keep named groups.
     ///
-    /// Default: `(100, 100)`
-    pub default_size: Size,
+    /// If set to `true`, all non-empty groups with `id` attribute will not
+    /// be removed.
+    ///
+    /// Default: false
+    pub keep_named_groups: bool,
 
-    /// Specifies the way `xlink:href` in `<image>` elements should be handled.
+    /// When empty, `text` elements will be skipped.
     ///
-    /// Default: see type's documentation for details
-    pub image_href_resolver: ImageHrefResolver,
+    /// Default: empty
+    #[cfg(feature = "text")]
+    pub fontdb: fontdb::Database,
+}
+
+impl Options {
+    /// Converts a relative path into absolute relative to the SVG file itself.
+    ///
+    /// If `Options::resources_dir` is not set, returns itself.
+    pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
+        match self.resources_dir {
+            Some(ref dir) => dir.join(rel_path),
+            None => rel_path.into(),
+        }
+    }
 }
 
 impl Default for Options {
@@ -133,20 +147,9 @@ impl Default for Options {
             shape_rendering: ShapeRendering::default(),
             text_rendering: TextRendering::default(),
             image_rendering: ImageRendering::default(),
-            default_size: Size::new(100.0, 100.0).unwrap(),
-            image_href_resolver: ImageHrefResolver::default(),
-        }
-    }
-}
-
-impl Options {
-    /// Converts a relative path into absolute relative to the SVG file itself.
-    ///
-    /// If `Options::resources_dir` is not set, returns itself.
-    pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
-        match self.resources_dir {
-            Some(ref dir) => dir.join(rel_path),
-            None => rel_path.into(),
+            keep_named_groups: false,
+            #[cfg(feature = "text")]
+            fontdb: fontdb::Database::new(),
         }
     }
 }
