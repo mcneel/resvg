@@ -1,6 +1,5 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Copyright 2023 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::fmt::Display;
 use std::io::Write;
@@ -647,6 +646,18 @@ fn write_element(node: &Node, is_clip_path: bool, opt: &WriteOptions, xml: &mut 
                 ImageRendering::OptimizeSpeed => {
                     xml.write_svg_attribute(AId::ImageRendering, "optimizeSpeed");
                 }
+                ImageRendering::Smooth => {
+                    xml.write_attribute(AId::Style.to_str(), "image-rendering:smooth");
+                }
+                ImageRendering::HighQuality => {
+                    xml.write_attribute(AId::Style.to_str(), "image-rendering:high-quality");
+                }
+                ImageRendering::CrispEdges => {
+                    xml.write_attribute(AId::Style.to_str(), "image-rendering:crisp-edges");
+                }
+                ImageRendering::Pixelated => {
+                    xml.write_attribute(AId::Style.to_str(), "image-rendering:pixelated");
+                }
             }
 
             xml.write_image_data(&img.kind);
@@ -673,10 +684,10 @@ fn write_element(node: &Node, is_clip_path: bool, opt: &WriteOptions, xml: &mut 
 
                 match text.rendering_mode {
                     TextRendering::OptimizeSpeed => {
-                        xml.write_svg_attribute(AId::TextRendering, "optimizeSpeed")
+                        xml.write_svg_attribute(AId::TextRendering, "optimizeSpeed");
                     }
                     TextRendering::GeometricPrecision => {
-                        xml.write_svg_attribute(AId::TextRendering, "geometricPrecision")
+                        xml.write_svg_attribute(AId::TextRendering, "geometricPrecision");
                     }
                     TextRendering::OptimizeLegibility => {}
                 }
@@ -901,7 +912,7 @@ impl XmlWriterExt for XmlWriter {
 
     #[inline(never)]
     fn write_svg_attribute<V: Display + ?Sized>(&mut self, id: AId, value: &V) {
-        self.write_attribute(id.to_str(), value)
+        self.write_attribute(id.to_str(), value);
     }
 
     #[inline(never)]
@@ -930,7 +941,7 @@ impl XmlWriterExt for XmlWriter {
         let (b1, b2) = int2hex(c.blue);
 
         self.write_attribute_raw(id.to_str(), |buf| {
-            buf.extend_from_slice(&[b'#', r1, r2, g1, g2, b1, b2])
+            buf.extend_from_slice(&[b'#', r1, r2, g1, g2, b1, b2]);
         });
     }
 
@@ -1294,7 +1305,7 @@ fn write_stroke(stroke: &Option<Stroke>, opt: &WriteOptions, xml: &mut XmlWriter
         }
 
         if !stroke.dashoffset.approx_zero_ulps(4) {
-            xml.write_svg_attribute(AId::StrokeDashoffset, &stroke.dashoffset)
+            xml.write_svg_attribute(AId::StrokeDashoffset, &stroke.dashoffset);
         }
 
         if !stroke.miterlimit.is_default() {
@@ -1506,7 +1517,7 @@ fn write_span(
     }
 
     if !span.apply_kerning {
-        xml.write_attribute("style", "font-kerning:none")
+        xml.write_attribute("style", "font-kerning:none");
     }
 
     if span.dominant_baseline != DominantBaseline::Auto {

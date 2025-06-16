@@ -1,6 +1,5 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Copyright 2019 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::render::Context;
 
@@ -65,7 +64,7 @@ pub fn fill_path(
                 tiny_skia::FilterQuality::Bicubic,
                 fill.opacity().get(),
                 patt_ts,
-            )
+            );
         }
     }
     paint.anti_alias = path.rendering_mode().use_shape_antialiasing();
@@ -105,7 +104,7 @@ fn stroke_path(
                 tiny_skia::FilterQuality::Bicubic,
                 stroke.opacity().get(),
                 patt_ts,
-            )
+            );
         }
     }
     paint.anti_alias = path.rendering_mode().use_shape_antialiasing();
@@ -170,7 +169,7 @@ fn convert_base_gradient(
             stop.color().blue,
             alpha.to_u8(),
         );
-        points.push(tiny_skia::GradientStop::new(stop.offset().get(), color))
+        points.push(tiny_skia::GradientStop::new(stop.offset().get(), color));
     }
 
     Some((mode, points))

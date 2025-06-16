@@ -1,6 +1,5 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Copyright 2019 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::sync::Arc;
 
@@ -409,12 +408,12 @@ fn convert_font(node: SvgNode, state: &converter::State) -> Font {
                 AId::FontFamily,
                 font_families,
                 state.opt.font_family
-            )
+            );
         })
         .unwrap_or_default();
 
     if families.is_empty() {
-        families.push(FontFamily::Named(state.opt.font_family.clone()))
+        families.push(FontFamily::Named(state.opt.font_family.clone()));
     }
 
     Font {

@@ -6,6 +6,30 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  fmt:
+    name: formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: Enable this when more of the Linebender CI has been applied.
+      #- name: install stable toolchain
+      #  uses: dtolnay/rust-toolchain@master
+      #  with:
+      #    toolchain: ${{ env.RUST_STABLE_VER }}
+      #    components: rustfmt
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+
+      - name: install ripgrep
+        run: |
+          sudo apt update
+          sudo apt install ripgrep
+
+      - name: check copyright headers
+        run: bash .github/copyright.sh
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -61,21 +85,16 @@ jobs:
           RUSTFLAGS: -Ctarget-feature=+crt-static # make sure it's static
         run: cargo build
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '5.15.2'
-
       # Unlike other binaries, viewsvg isn't built with crt-static
       - name: Build C API
         working-directory: crates/c-api
         run: cargo build --release
 
-      - name: Prepare Developer Command Prompt for MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+  # If this fails, consider changing your text or adding something to .typos.toml.
+  typos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Build viewsvg
-        working-directory: tools/viewsvg
-        run: |
-          qmake
-          nmake
+      - name: check typos
+        uses: crate-ci/typos@v1.28.4

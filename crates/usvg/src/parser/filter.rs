@@ -1,6 +1,5 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Copyright 2022 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! A collection of SVG filters.
 
@@ -76,7 +75,7 @@ pub(crate) fn convert(
                 id: cache.gen_filter_id(),
                 rect,
                 primitives: vec![Primitive {
-                    rect: rect,
+                    rect,
                     // Unlike `filter` elements, filter functions use sRGB colors by default.
                     color_interpolation: ColorInterpolation::SRGB,
                     result: "result".to_string(),
@@ -112,28 +111,28 @@ pub(crate) fn convert(
                 cache,
             ),
             svgtypes::FilterValue::Brightness(amount) => {
-                create_base_filter_func(convert_brightness_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_brightness_function(amount), &mut filters, cache);
             }
             svgtypes::FilterValue::Contrast(amount) => {
-                create_base_filter_func(convert_contrast_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_contrast_function(amount), &mut filters, cache);
             }
             svgtypes::FilterValue::Grayscale(amount) => {
-                create_base_filter_func(convert_grayscale_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_grayscale_function(amount), &mut filters, cache);
             }
             svgtypes::FilterValue::HueRotate(angle) => {
-                create_base_filter_func(convert_hue_rotate_function(angle), &mut filters, cache)
+                create_base_filter_func(convert_hue_rotate_function(angle), &mut filters, cache);
             }
             svgtypes::FilterValue::Invert(amount) => {
-                create_base_filter_func(convert_invert_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_invert_function(amount), &mut filters, cache);
             }
             svgtypes::FilterValue::Opacity(amount) => {
-                create_base_filter_func(convert_opacity_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_opacity_function(amount), &mut filters, cache);
             }
             svgtypes::FilterValue::Sepia(amount) => {
-                create_base_filter_func(convert_sepia_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_sepia_function(amount), &mut filters, cache);
             }
             svgtypes::FilterValue::Saturate(amount) => {
-                create_base_filter_func(convert_saturate_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_saturate_function(amount), &mut filters, cache);
             }
             svgtypes::FilterValue::Url(url) => {
                 if let Some(link) = node.document().element_by_id(url) {
@@ -219,7 +218,7 @@ fn convert_url(
             log::warn!(
                 "Filter '{}' has an invalid region. Skipped.",
                 node.element_id()
-            )
+            );
         })
         .ok_or(())?;
 
@@ -801,8 +800,8 @@ fn convert_std_dev_attr(fe: SvgNode, scale: Size, default: &str) -> (PositiveF32
     let std_dev_x = (std_dev_x as f32) * scale.width();
     let std_dev_y = (std_dev_y as f32) * scale.height();
 
-    let std_dev_x = PositiveF32::new(std_dev_x as f32).unwrap_or(PositiveF32::ZERO);
-    let std_dev_y = PositiveF32::new(std_dev_y as f32).unwrap_or(PositiveF32::ZERO);
+    let std_dev_x = PositiveF32::new(std_dev_x).unwrap_or(PositiveF32::ZERO);
+    let std_dev_y = PositiveF32::new(std_dev_y).unwrap_or(PositiveF32::ZERO);
 
     (std_dev_x, std_dev_y)
 }
@@ -856,7 +855,7 @@ fn convert_image_inner(
     }
 
     let href = fe.try_attribute(AId::Href).log_none(|| {
-        log::warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.")
+        log::warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.");
     })?;
     let img_data = super::image::get_href_data(href, state)?;
     let actual_size = img_data.actual_size()?;

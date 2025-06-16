@@ -1,6 +1,5 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Copyright 2018 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::sync::Arc;
 
@@ -53,7 +52,7 @@ pub(crate) fn convert(
     let mut mask_all = false;
     if units == Units::ObjectBoundingBox {
         if let Some(bbox) = object_bbox {
-            rect = rect.bbox_transform(bbox)
+            rect = rect.bbox_transform(bbox);
         } else {
             // When mask units are `objectBoundingBox` and bbox is zero-sized - the whole
             // element should be masked.

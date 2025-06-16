@@ -1,6 +1,5 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Copyright 2020 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! C bindings.
 
@@ -156,7 +155,21 @@ pub extern "C" fn resvg_options_set_resources_dir(opt: *mut resvg_options, path:
 /// Default: 96
 #[no_mangle]
 pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f32) {
-    cast_opt(opt).dpi = dpi as f32;
+    cast_opt(opt).dpi = dpi;
+}
+
+/// @brief Provides the content of a stylesheet that will be used when resolving CSS attributes.
+///
+/// Must be UTF-8. Can be set to NULL.
+///
+/// Default: NULL
+#[no_mangle]
+pub extern "C" fn resvg_options_set_stylesheet(opt: *mut resvg_options, content: *const c_char) {
+    if content.is_null() {
+        cast_opt(opt).style_sheet = None;
+    } else {
+        cast_opt(opt).style_sheet = Some(cstr_to_str(content).unwrap().into());
+    }
 }
 
 /// @brief Sets the default font family.
@@ -681,7 +694,7 @@ pub extern "C" fn resvg_node_exists(tree: *const resvg_render_tree, id: *const c
     let id = match cstr_to_str(id) {
         Some(v) => v,
         None => {
-            log::warn!("Provided ID is no an UTF-8 string.");
+            log::warn!("Provided ID is not a UTF-8 string.");
             return false;
         }
     };
@@ -711,7 +724,7 @@ pub extern "C" fn resvg_get_node_transform(
     let id = match cstr_to_str(id) {
         Some(v) => v,
         None => {
-            log::warn!("Provided ID is no an UTF-8 string.");
+            log::warn!("Provided ID is not a UTF-8 string.");
             return false;
         }
     };
@@ -784,7 +797,7 @@ fn get_node_bbox(
     let id = match cstr_to_str(id) {
         Some(v) => v,
         None => {
-            log::warn!("Provided ID is no an UTF-8 string.");
+            log::warn!("Provided ID is not a UTF-8 string.");
             return false;
         }
     };

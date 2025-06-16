@@ -1,6 +1,5 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Copyright 2022 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::mem;
 use std::sync::Arc;
@@ -273,7 +272,7 @@ impl DatabaseExt for Database {
             } else {
                 tree.node_by_id(&format!("glyph{}", glyph_id.0))
                     .log_none(|| {
-                        log::warn!("Failed to find SVG glyph node for glyph {}", glyph_id.0)
+                        log::warn!("Failed to find SVG glyph node for glyph {}", glyph_id.0);
                     })
                     .cloned()?
             };
@@ -318,7 +317,7 @@ impl DatabaseExt for Database {
             )?;
             svg.end_element();
 
-            Tree::from_data(&svg.end_document().as_bytes(), &Options::default()).ok()
+            Tree::from_data(svg.end_document().as_bytes(), &Options::default()).ok()
         })?
     }
 }

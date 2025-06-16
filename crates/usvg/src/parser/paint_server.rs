@@ -1,6 +1,5 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Copyright 2018 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::str::FromStr;
 use std::sync::Arc;
@@ -179,7 +178,7 @@ fn convert_pattern(
         log::warn!(
             "Pattern '{}' has an invalid size. Skipped.",
             node.element_id()
-        )
+        );
     })?;
 
     let mut patt = Pattern {
@@ -863,7 +862,7 @@ fn process_context_paint(
                     spread_method: rg.spread_method,
                     stops: rg.stops.clone(),
                 },
-            }))
+            }));
         }
         Paint::Pattern(ref pat) => {
             let transform = pat.transform.post_concat(rev_transform);
@@ -875,7 +874,7 @@ fn process_context_paint(
                 rect: pat.rect,
                 view_box: pat.view_box,
                 root: pat.root.clone(),
-            }))
+            }));
         }
     }
 
@@ -1048,7 +1047,7 @@ impl Paint {
                         rect,
                         view_box: patt.view_box,
                         root,
-                    })
+                    });
                 }
             }
         }
