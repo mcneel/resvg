@@ -6,6 +6,7 @@ license.workspace = true
 edition = "2021"
 rust-version = "1.67.1"
 workspace = "../.."
+build = "dll-version/build.rs"
 
 [lib]
 name = "resvg_rhino"
