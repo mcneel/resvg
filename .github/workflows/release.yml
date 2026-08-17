@@ -1,0 +1,85 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ rhino-9.x ]
+  pull_request:
+    branches: [ rhino-9.x ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build
+      working-directory: crates/c-api
+      run: cargo build --release
+
+    - name: Strip
+      run: strip --strip-unneeded target/release/libresvg_rhino.so
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: resvg_rhino-linux-x64
+        path: target/release/libresvg_rhino.so
+
+  macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build
+      working-directory: crates/c-api
+      run: cargo build --release
+
+    - name: Strip
+      run: strip -x target/release/libresvg_rhino.dylib
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: resvg_rhino-macos-arm64
+        path: target/release/libresvg_rhino.dylib
+
+  windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build
+      working-directory: crates/c-api
+      run: cargo build --release
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: resvg_rhino-windows-x64
+        path: target/release/resvg_rhino.dll
+
+  collect:
+    needs: [ linux, macos, windows ]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download
+      uses: actions/download-artifact@v4
+      with:
+        pattern: resvg_rhino-*
+        merge-multiple: true
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: resvg_rhino-dlls
+        path: |
+          libresvg_rhino.so
+          libresvg_rhino.dylib
+          resvg_rhino.dll
