@@ -1,0 +1,29 @@
+#include <winver.h>
+
+1 VERSIONINFO
+FILEVERSION     9,0,25170,01000
+PRODUCTVERSION  9,0,25170,01000
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0
+FILEOS          VOS__WINDOWS32
+FILETYPE        VFT_DLL
+FILESUBTYPE     0
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0" // Language and code page
+        BEGIN
+            VALUE "CompanyName",      "resvg"
+            VALUE "FileDescription",  "resvg"
+            VALUE "FileVersion",      "9,0,25170,01000"
+            VALUE "InternalName",     "resvg_rhino.dll"
+            VALUE "OriginalFilename", "resvg_rhino.dll"
+            VALUE "ProductName",      "resvg"
+            VALUE "ProductVersion",   "9,0,25170,01000"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END
